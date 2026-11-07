@@ -30,6 +30,7 @@ struct Settings {
     int variant = 0;               // Tidal Wave only: 0 = Underwater, 1 = Beach
     int layers = 3;                // 1..3 depth layers (1 = everything on one layer)
     int background = 1;            // 0 off, 1 light, 2 full background decoration
+    int blockColor = -1;           // colour of the layout blocks: -2 = leave alone, -1 = style colour, else swatch
     int backgroundColor = -2;      // -2 = leave the level's background alone, -1 = style colour, else swatch
     int lighting = 70;             // 0..100, brightness of the detail colour
     int detail = 50;               // 0..100, how many small accent objects

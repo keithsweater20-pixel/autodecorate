@@ -45,6 +45,7 @@ static StyleDef makeGrief() {
         {210, 30, 48},
         {235, 235, 248},
         {10, 10, 13},
+        {30, 30, 38},
         {
             rule({"spike", "thorn", "hook", "claw", "tooth", "fang", "pit"}, FaceTop | FaceSide | FaceSlope, 3.f, 12, 70, .6f, 1.1f, true, false, 0, 1),
             rule({"chain", "drip", "tear", "rope", "tentacle", "vine"}, FaceBottom, 2.5f, 20, 120, .6f, 1.2f, true, false, 0, 1),
@@ -67,6 +68,7 @@ static StyleDef makeTidalUnderwater() {
         {0, 176, 230},
         {24, 92, 210},
         {4, 22, 52},
+        {16, 74, 150},
         {
             rule({"wave", "curve", "swirl", "spiral", "arc", "tide", "ripple"}, FaceSide | FaceSlope | FaceTop, 3.f, 20, 150, .6f, 1.2f, true, false, 2, 1),
             rule({"ball", "circle", "ring", "bubble", "dot"}, FaceAll, 2.5f, 6, 50, .3f, .9f, false, true, 12, 2),
@@ -88,6 +90,7 @@ static StyleDef makeTidalBeach() {
         {255, 152, 56},
         {146, 92, 226},
         {112, 202, 246},
+        {58, 140, 214},
         {
             rule({"wave", "curve", "swirl", "arc", "tide", "ripple"}, FaceSide | FaceSlope | FaceTop, 3.f, 20, 150, .6f, 1.2f, true, false, 2, 1),
             rule({"ball", "circle", "ring", "sun", "dot"}, FaceAll, 2.f, 6, 50, .3f, .9f, false, true, 12, 2),
@@ -109,6 +112,7 @@ static StyleDef makeLastHope() {
         {255, 208, 96},
         {170, 205, 255},
         {8, 10, 26},
+        {26, 32, 66},
         {
             rule({"ray", "beam", "light", "glow", "shine"}, FaceTop | FaceSide | FaceSlope, 2.5f, 20, 150, .6f, 1.2f, true, false, 0, 1),
             rule({"star", "spark", "diamond", "glint"}, FaceAll, 3.f, 6, 60, .3f, .8f, false, true, 14, 2),
@@ -131,6 +135,7 @@ static StyleDef makeLimbo() {
         {64, 230, 208},
         {232, 84, 206},
         {8, 6, 18},
+        {30, 22, 56},
         {
             rule({"diamond", "star", "arrow", "triangle", "rhombus", "square", "hex"}, FaceAll, 2.f, 10, 70, .4f, .9f, false, true, 10, 2),
             rule({"ring", "circle", "ball", "orb", "eye"}, FaceAll, 2.f, 8, 60, .4f, .9f, false, false, 12, 2),

@@ -34,6 +34,7 @@ A Geode mod for Geometry Dash 2.208 (iOS, Android, Windows, macOS). It decorates
 | Detail | How many small accent objects. |
 | Variation | How random sizes and rotations are. |
 | Seed | Same seed + settings + layout = same result. Regenerate picks a new seed. |
+| Block color | Recolors your layout blocks to the style's block color (A), a swatch, or X to leave them. Only blocks that use the default Object color change. Shape and collision never change. Needs "Add color triggers". |
 | Background color | X = leave your level's background alone, A = the style's color, or a swatch. Needs "Add color triggers". |
 
 ## Styles
@@ -50,7 +51,7 @@ These are interpretations of the style names (the real levels' block decoration 
 
 ## Colors
 
-The mod uses color channels 997 and 998 (and 1000, the background channel, if you choose a background color). If "Add color triggers" is on, it adds Color triggers above the level start so your chosen colors show. Change the channels in `Settings.hpp` if they clash with your level.
+The mod uses color channels 997 and 998, plus 1000 (background) and 1004 (the default Object color, for block color) when you choose those. If "Add color triggers" is on, it adds Color triggers above the level start so your chosen colors show. Change the channels in `Settings.hpp` if they clash with your level.
 
 ## Building the .geode (iOS)
 

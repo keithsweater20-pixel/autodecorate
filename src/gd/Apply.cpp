@@ -131,13 +131,14 @@ void prepare(Settings const& st, Prepared& out) {
 
 class DecoJob : public CCNode {
 public:
-    static DecoJob* create(Plan plan, Settings st, RGB pri, RGB sec, RGB bg, V2 mn, V2 mx) {
+    static DecoJob* create(Plan plan, Settings st, RGB pri, RGB sec, RGB bg, RGB blk, V2 mn, V2 mx) {
         auto ret = new DecoJob();
         ret->m_plan = std::move(plan);
         ret->m_st = st;
         ret->m_pri = pri;
         ret->m_sec = sec;
         ret->m_bg = bg;
+        ret->m_blk = blk;
         ret->m_mn = mn;
         ret->m_mx = mx;
         if (ret->init()) {
@@ -175,6 +176,8 @@ public:
                 makeTrigger(lel, m_st.primaryChannel, m_pri, x, y, 1.f);
                 makeTrigger(lel, m_st.secondaryChannel, m_sec, x, y + 30.f, glow);
                 if (m_st.backgroundColor != -2) makeTrigger(lel, compat::kBackgroundChannel, m_bg, x, y + 60.f, 1.f);
+                // Recolours blocks that use the default Object colour. Shape and collision are untouched.
+                if (m_st.blockColor != -2) makeTrigger(lel, compat::kObjectChannel, m_blk, x, y + 90.f, 1.f);
             }
         }
         size_t end = std::min(m_next + kBatch, m_plan.items.size());
@@ -207,7 +210,7 @@ private:
     static constexpr size_t kBatch = 250;
     Plan m_plan;
     Settings m_st;
-    RGB m_pri, m_sec, m_bg;
+    RGB m_pri, m_sec, m_bg, m_blk;
     V2 m_mn, m_mx;
     size_t m_next = 0;
     bool m_started = false;
@@ -252,7 +255,8 @@ void runAutodecorate(Settings const& st) {
     RGB pri = st.primaryColor >= 0 ? swatchColor(st.primaryColor) : sd.primary;
     RGB sec = st.secondaryColor >= 0 ? swatchColor(st.secondaryColor) : sd.secondary;
     RGB bg = st.backgroundColor >= 0 ? swatchColor(st.backgroundColor) : sd.background;
-    if (auto job = DecoJob::create(std::move(prep.plan), st, pri, sec, bg, prep.scan.mn, prep.scan.mx)) ui->addChild(job, 1000);
+    RGB blk = st.blockColor >= 0 ? swatchColor(st.blockColor) : sd.block;
+    if (auto job = DecoJob::create(std::move(prep.plan), st, pri, sec, bg, blk, prep.scan.mn, prep.scan.mx)) ui->addChild(job, 1000);
 }
 
 void previewAutodecorate(Settings const& st) {

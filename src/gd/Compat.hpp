@@ -8,6 +8,7 @@ namespace autodeco::compat {
 using namespace geode::prelude;
 
 constexpr int kColorTriggerKey = 899;  // the editor's Color trigger
+constexpr int kObjectChannel = 1004;      // the default colour of objects such as layout blocks
 constexpr int kBackgroundChannel = 1000;  // the level's background colour channel
 
 // Texture name an object key uses ("" when the key is unused).

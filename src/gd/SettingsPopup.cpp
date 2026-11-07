@@ -32,7 +32,7 @@ SettingsPopup* SettingsPopup::create() {
 }
 
 bool SettingsPopup::init() {
-    if (!Popup::init(420.f, 300.f)) return false;
+    if (!Popup::init(420.f, 320.f)) return false;
     this->setTitle("Autodecorate");
     m_st = loadSettings();
 
@@ -61,7 +61,7 @@ bool SettingsPopup::init() {
         m_tabs[i] = ButtonSprite::create(tabNames[i], 84, true, "bigFont.fnt", kOff, 26.f, .6f);
         auto btn = CCMenuItemSpriteExtra::create(m_tabs[i], this, menu_selector(SettingsPopup::onTab));
         btn->setTag(i);
-        addItem(btn, -90.f + i * 90.f, 112.f, -1);
+        addItem(btn, -90.f + i * 90.f, 124.f, -1);
     }
 
     // ---- Look page ----
@@ -94,11 +94,11 @@ bool SettingsPopup::init() {
     addSlider(m_densityLabel, "Density 50%", menu_selector(SettingsPopup::onDensity), m_st.density / 100.f, -64.f, 0);
 
     // ---- Colors page ----
-    addText(makeLabel("Main color  (A = style default)", .4f, true), -196.f, 86.f, 1);
+    addText(makeLabel("Main color  (A = style default)", .4f, true), -196.f, 98.f, 1);
     // Main/detail: button 0 is "A" (value -1), then 9 swatches (values 0..8). Tags are stored as value+1.
     {
         for (int row = 0; row < 2; ++row) {
-            float y = row == 0 ? 64.f : 16.f;
+            float y = row == 0 ? 78.f : 36.f;
             auto& borders = row == 0 ? m_primaryBorders : m_secondaryBorders;
             auto sel = row == 0 ? menu_selector(SettingsPopup::onPrimary) : menu_selector(SettingsPopup::onSecondary);
             for (int i = 0; i < kSwatchCount + 1; ++i) {
@@ -125,30 +125,35 @@ bool SettingsPopup::init() {
             }
         }
     }
-    addText(makeLabel("Detail color", .4f, true), -196.f, 38.f, 1);
-    addText(makeLabel("Background color  (X = leave alone, A = style color)", .4f, true), -196.f, -8.f, 1);
-    for (int i = 0; i < kSwatchCount + 2; ++i) {  // X, A, then the swatches
-        auto border = CCSprite::createWithSpriteFrameName("whiteSquare60_001.png");
-        border->setScale(.5f);
-        auto fill = CCSprite::createWithSpriteFrameName("whiteSquare60_001.png");
-        fill->setScale(.8f);
-        fill->setPosition(border->getContentSize() / 2.f);
-        if (i < 2) {
-            fill->setColor({90, 90, 90});
-            auto a = CCLabelBMFont::create(i == 0 ? "X" : "A", "bigFont.fnt");
-            a->setScale(1.5f);
-            a->setPosition(fill->getContentSize() / 2.f);
-            fill->addChild(a);
-        } else {
-            RGB c = swatchColor(i - 2);
-            fill->setColor({c.r, c.g, c.b});
+    addText(makeLabel("Detail color", .4f, true), -196.f, 56.f, 1);
+    auto specialRow = [&](float y, std::vector<CCSprite*>& borders, SEL_MenuHandler sel) {
+        for (int i = 0; i < kSwatchCount + 2; ++i) {  // X, A, then the swatches
+            auto border = CCSprite::createWithSpriteFrameName("whiteSquare60_001.png");
+            border->setScale(.5f);
+            auto fill = CCSprite::createWithSpriteFrameName("whiteSquare60_001.png");
+            fill->setScale(.8f);
+            fill->setPosition(border->getContentSize() / 2.f);
+            if (i < 2) {
+                fill->setColor({90, 90, 90});
+                auto a = CCLabelBMFont::create(i == 0 ? "X" : "A", "bigFont.fnt");
+                a->setScale(1.5f);
+                a->setPosition(fill->getContentSize() / 2.f);
+                fill->addChild(a);
+            } else {
+                RGB c = swatchColor(i - 2);
+                fill->setColor({c.r, c.g, c.b});
+            }
+            border->addChild(fill);
+            auto btn = CCMenuItemSpriteExtra::create(border, this, sel);
+            btn->setTag(i - 2);  // value: -2 = leave alone, -1 = style colour, 0.. = swatch
+            borders.push_back(border);
+            addItem(btn, -160.f + i * 32.f, y, 1);
         }
-        border->addChild(fill);
-        auto btn = CCMenuItemSpriteExtra::create(border, this, menu_selector(SettingsPopup::onBackgroundColor));
-        btn->setTag(i - 2);  // value: -2 = leave alone, -1 = style colour, 0.. = swatch
-        m_bgBorders.push_back(border);
-        addItem(btn, -160.f + i * 32.f, -30.f, 1);
-    }
+    };
+    addText(makeLabel("Background color  (X = leave alone, A = style color)", .4f, true), -196.f, 14.f, 1);
+    specialRow(-6.f, m_bgBorders, menu_selector(SettingsPopup::onBackgroundColor));
+    addText(makeLabel("Block color  (recolors your layout blocks)", .4f, true), -196.f, -28.f, 1);
+    specialRow(-48.f, m_blockBorders, menu_selector(SettingsPopup::onBlockColor));
 
     auto addToggle = [&](char const* text, bool value, SEL_MenuHandler sel, float x, float y) {
         auto t = CCMenuItemToggler::createWithStandardSprites(this, sel, .7f);
@@ -156,9 +161,9 @@ bool SettingsPopup::init() {
         addItem(t, x, y, 1);
         addText(makeLabel(text, .4f, true), x + 18.f, y, 1);
     };
-    addToggle("Selected objects only", m_st.selectedOnly, menu_selector(SettingsPopup::onSelectedOnly), -190.f, -62.f);
-    addToggle("Add color triggers", m_st.makeColorTriggers, menu_selector(SettingsPopup::onTriggers), 20.f, -62.f);
-    addToggle("Keep play area clear", m_st.keepPlayAreaClear, menu_selector(SettingsPopup::onKeepClear), -190.f, -84.f);
+    addToggle("Selected objects only", m_st.selectedOnly, menu_selector(SettingsPopup::onSelectedOnly), -190.f, -78.f);
+    addToggle("Add color triggers", m_st.makeColorTriggers, menu_selector(SettingsPopup::onTriggers), 20.f, -78.f);
+    addToggle("Keep play area clear", m_st.keepPlayAreaClear, menu_selector(SettingsPopup::onKeepClear), -190.f, -98.f);
 
     // ---- More page ----
     addText(makeLabel("Layers", .5f, true), -196.f, 86.f, 2);
@@ -177,7 +182,7 @@ bool SettingsPopup::init() {
     addText(makeLabel("Same seed + same settings = same result", .3f, true), -196.f, -76.f, 2);
 
     // ---- Actions (every page) ----
-    float ay = -112.f;
+    float ay = -126.f;
     addItem(CCMenuItemSpriteExtra::create(ButtonSprite::create("Preview", 92, true, "bigFont.fnt", kOff, 28.f, .5f), this,
                                           menu_selector(SettingsPopup::onPreview)), -150.f, ay, -1);
     addItem(CCMenuItemSpriteExtra::create(ButtonSprite::create("Generate", 92, true, "goldFont.fnt", kOn, 28.f, .5f), this,
@@ -222,6 +227,7 @@ void SettingsPopup::refresh() {
     outline(m_primaryBorders, m_st.primaryColor, 1);
     outline(m_secondaryBorders, m_st.secondaryColor, 1);
     outline(m_bgBorders, m_st.backgroundColor, 2);
+    outline(m_blockBorders, m_st.blockColor, 2);
     m_densityLabel->setString(fmt::format("Density {}%", m_st.density).c_str());
     m_lightingLabel->setString(fmt::format("Lighting {}%", m_st.lighting).c_str());
     m_detailLabel->setString(fmt::format("Detail {}%", m_st.detail).c_str());
@@ -284,6 +290,10 @@ void SettingsPopup::onSecondary(CCObject* sender) {
 }
 void SettingsPopup::onBackgroundColor(CCObject* sender) {
     m_st.backgroundColor = static_cast<CCNode*>(sender)->getTag();
+    refresh();
+}
+void SettingsPopup::onBlockColor(CCObject* sender) {
+    m_st.blockColor = static_cast<CCNode*>(sender)->getTag();
     refresh();
 }
 // GD toggles report their old state inside the callback, so the new value is the inverse.

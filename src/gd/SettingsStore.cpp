@@ -25,6 +25,7 @@ Settings loadSettings() {
     s.variant = std::clamp(m->getSavedValue<int>("variant", 0), 0, 1);
     s.layers = std::clamp(m->getSavedValue<int>("layers", 3), 1, 3);
     s.background = std::clamp(m->getSavedValue<int>("background", 1), 0, 2);
+    s.blockColor = std::clamp(m->getSavedValue<int>("block-color", -1), -2, kSwatchCount - 1);
     s.backgroundColor = std::clamp(m->getSavedValue<int>("background-color", -2), -2, kSwatchCount - 1);
     s.lighting = std::clamp(m->getSavedValue<int>("lighting", 70), 0, 100);
     s.detail = std::clamp(m->getSavedValue<int>("detail", 50), 0, 100);
@@ -40,6 +41,7 @@ void saveSettings(Settings const& s) {
     m->setSavedValue<int>("layers", s.layers);
     m->setSavedValue<int>("background", s.background);
     m->setSavedValue<int>("background-color", s.backgroundColor);
+    m->setSavedValue<int>("block-color", s.blockColor);
     m->setSavedValue<int>("lighting", s.lighting);
     m->setSavedValue<int>("detail", s.detail);
     m->setSavedValue<int>("variation", s.variation);

@@ -15,7 +15,7 @@ protected:
     Settings m_st;
     int m_page = 0;  // 0 Look, 1 Colors, 2 More
     std::vector<ButtonSprite*> m_styleSprites, m_variantSprites, m_patternSprites, m_layerSprites, m_backgroundSprites;
-    std::vector<cocos2d::CCSprite*> m_primaryBorders, m_secondaryBorders, m_bgBorders;
+    std::vector<cocos2d::CCSprite*> m_primaryBorders, m_secondaryBorders, m_bgBorders, m_blockBorders;
     std::vector<cocos2d::CCNode*> m_pages[3];
     std::vector<cocos2d::CCNode*> m_variantNodes;
     std::vector<std::pair<Slider*, int>> m_sliders;  // slider and the page it lives on
@@ -43,6 +43,7 @@ protected:
     void onPrimary(cocos2d::CCObject* sender);
     void onSecondary(cocos2d::CCObject* sender);
     void onBackgroundColor(cocos2d::CCObject* sender);
+    void onBlockColor(cocos2d::CCObject* sender);
     void onSelectedOnly(cocos2d::CCObject* sender);
     void onTriggers(cocos2d::CCObject* sender);
     void onKeepClear(cocos2d::CCObject* sender);

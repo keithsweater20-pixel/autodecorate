@@ -34,6 +34,7 @@ struct StyleDef {
     const char* blurb;
     RGB primary, secondary;
     RGB background;                     // suggested background colour
+    RGB block;                          // suggested colour for the layout blocks
     std::vector<DecoRule> rules;
     std::vector<DecoRule> backgroundRules;  // large, faint shapes placed away from the layout
     float scatterBand;  // how far from a surface Scatter/Cluster may drift

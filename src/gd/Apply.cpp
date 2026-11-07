@@ -190,7 +190,10 @@ void runAutodecorate(Settings const& st) {
     buildScan(scan, descs);
     Plan plan = makePlan(scan, st, std::random_device{}(), queryDecoPool);
     if (plan.items.empty()) {
-        toast(plan.note.empty() ? "Autodecorate: nothing to add." : plan.note.c_str(), NotificationIcon::Warning);
+        auto const& ps = poolStats();
+        std::string msg = plan.note.empty() ? std::string("Autodecorate: nothing to add.") : plan.note;
+        msg += fmt::format(" [keys {} / noframe {} / noobj {} / notdeco {} / small {} / ok {}]", ps.keys, ps.noFrame, ps.noObject, ps.notDeco, ps.tooSmall, ps.verified);
+        toast(msg.c_str(), NotificationIcon::Warning);
         return;
     }
 

@@ -7,6 +7,8 @@ using namespace geode::prelude;
 namespace autodeco {
 
 namespace {
+PoolStats g_stats;
+
 struct Info {
     int id;
     std::string lower;
@@ -23,10 +25,11 @@ std::vector<Info>& allInfo() {
     for (int id = 1; id <= 4000; ++id) {
         std::string frame = compat::frameForKey(id);
         if (frame.empty()) continue;
+        g_stats.keys++;
         std::string lower = frame;
         std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
         if (lower.find("empty") != std::string::npos) continue;
-        if (!cache->spriteFrameByName(frame.c_str())) continue;
+        if (!cache->spriteFrameByName(frame.c_str())) { g_stats.noFrame++; continue; }
         all.push_back({id, lower, 0, 0.f});
     }
     return all;
@@ -35,16 +38,25 @@ std::vector<Info>& allInfo() {
 bool verify(Info& info) {
     if (info.state) return info.state == 1;
     info.state = 2;
-    auto obj = GameObject::createWithKey(info.id);
-    if (!obj || !compat::isPlainDecoration(obj)) return false;
+    // Create through the editor, exactly like the real placement does, so the object type is
+    // fully set up; then remove it again right away.
+    auto lel = LevelEditorLayer::get();
+    GameObject* obj = lel ? lel->createObject(info.id, ccp(-9000.f, -9000.f), true) : GameObject::createWithKey(info.id);
+    if (!obj) { g_stats.noObject++; return false; }
+    bool plain = compat::isPlainDecoration(obj);
     auto cs = obj->getContentSize();
     float size = std::max(cs.width, cs.height) * std::max(std::abs(obj->getScaleX()), std::abs(obj->getScaleY()));
-    if (size < 1.f) return false;
+    if (lel) lel->removeObject(obj, true);
+    if (!plain) { g_stats.notDeco++; return false; }
+    if (size < 1.f) { g_stats.tooSmall++; return false; }
     info.size = size;
     info.state = 1;
+    g_stats.verified++;
     return true;
 }
 }  // namespace
+
+PoolStats const& poolStats() { return g_stats; }
 
 std::vector<Candidate> queryDecoPool(DecoRule const& rule) {
     std::vector<Candidate> out;

@@ -1,0 +1,48 @@
+name: Build Autodecorate (iOS)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build-ios:
+    name: iOS
+    runs-on: macos-latest
+    permissions:
+      contents: write # needed to publish the release below
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the mod for iOS
+        id: build
+        uses: geode-sdk/build-geode-mod@main
+        with:
+          target: iOS
+          sdk: given # uses the "geode" version in mod.json (5.11.2)
+          # Same pins that made TpllKit build: bindings from the last commit before the
+          # 5.11.2 release, and a code generator built from that same commit.
+          bindings-ref: 1605f500d053f8de122bf5c7dc6d17c24866e02e
+          configure-args: -DSKIP_BUILDING_CODEGEN=OFF
+
+      - name: Upload .geode file
+        uses: actions/upload-artifact@v7
+        with:
+          name: Autodecorate-iOS
+          path: ${{ steps.build.outputs.build-output }}/*.geode
+          if-no-files-found: error
+
+      - name: Publish as a downloadable release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FILE=$(ls "${{ steps.build.outputs.build-output }}"/*.geode | head -n 1)
+          gh release delete autodecorate-latest --cleanup-tag --yes --repo "$GITHUB_REPOSITORY" || true
+          gh release create autodecorate-latest "$FILE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Autodecorate (latest build)" \
+            --notes "Latest iOS build of Autodecorate for Geode 5.11.2 / GD 2.2081. Download the .geode file below."

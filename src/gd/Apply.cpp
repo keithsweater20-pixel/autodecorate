@@ -192,7 +192,7 @@ void runAutodecorate(Settings const& st) {
     if (plan.items.empty()) {
         auto const& ps = poolStats();
         std::string msg = plan.note.empty() ? std::string("Autodecorate: nothing to add.") : plan.note;
-        msg += fmt::format(" [keys {} / noframe {} / noobj {} / notdeco {} / small {} / ok {}]", ps.keys, ps.noFrame, ps.noObject, ps.notDeco, ps.tooSmall, ps.verified);
+        msg += fmt::format(" [keys {} / noframe {} / noobj {} / notdeco {} / small {} / ok {} / size {}]", ps.keys, ps.noFrame, ps.noObject, ps.notDeco, ps.tooSmall, ps.verified, ps.sizeRej);
         toast(msg.c_str(), NotificationIcon::Warning);
         return;
     }

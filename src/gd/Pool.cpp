@@ -21,17 +21,24 @@ std::vector<Info>& allInfo() {
     static bool built = false;
     if (built) return all;
     built = true;
-    auto cache = CCSpriteFrameCache::sharedSpriteFrameCache();
-    for (int id = 1; id <= 4000; ++id) {
-        std::string frame = compat::frameForKey(id);
-        if (frame.empty()) continue;
+    auto addKey = [&](int id, std::string frame) {
+        if (frame.empty()) return;
         g_stats.keys++;
         std::string lower = frame;
         std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
-        if (lower.find("empty") != std::string::npos) continue;
-        if (!cache->spriteFrameByName(frame.c_str())) { g_stats.noFrame++; continue; }
+        if (lower.find("empty") != std::string::npos) return;
         all.push_back({id, lower, 0, 0.f});
+    };
+    // Preferred: the toolbox's own key -> texture list.
+    if (auto toolbox = ObjectToolbox::sharedState()) {
+        for (auto const& [id, frame] : toolbox->m_allKeys) {
+            if (id < 1 || id > 5000) continue;
+            addKey(id, std::string(frame.c_str()));
+        }
     }
+    // Fallback: probe keys one by one.
+    if (all.empty())
+        for (int id = 1; id <= 4000; ++id) addKey(id, compat::frameForKey(id));
     return all;
 }
 
@@ -66,7 +73,7 @@ std::vector<Candidate> queryDecoPool(DecoRule const& rule) {
         for (auto const& kw : rule.keywords)
             if (info.lower.find(kw) != std::string::npos) { match = true; break; }
         if (!match || !verify(info)) continue;
-        if (info.size < rule.minSize || info.size > rule.maxSize) continue;
+        if (info.size < rule.minSize || info.size > rule.maxSize) { g_stats.sizeRej++; continue; }
         out.push_back({info.id, info.size});
         if (out.size() >= 120) break;
     }

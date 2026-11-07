@@ -4,11 +4,12 @@ A Geode mod for Geometry Dash 2.208 (iOS, Android, Windows, macOS). It decorates
 
 ## How to use
 
-1. Open a level in the editor.
-2. Tap **Autodecorate**, next to the **Copy** button.
-3. Choose a style, pattern, density and colors.
-4. Tap **Apply**. Nothing changes until you do.
-5. Undo removes everything from one Apply in a single step.
+1. Open a level in the editor and tap **Autodecorate**, next to the **Copy** button.
+2. Pick a style, pattern, density, colors and the options on the three tabs (Look, Colors, More).
+3. **Preview** shows colored dots where decoration would go. It adds nothing. Tap Preview again to hide it.
+4. **Generate** adds the decoration. Nothing changes until you press it. It is one editor Undo step.
+5. **Regenerate** removes the last generation (if it is still your newest editor action) and makes a new one with a new seed.
+6. **Undo** removes the last generation under the same condition.
 
 ## What it does
 
@@ -16,26 +17,40 @@ A Geode mod for Geometry Dash 2.208 (iOS, Android, Windows, macOS). It decorates
 - Adds decoration only to exposed surfaces. Faces hidden by neighbouring layout objects get nothing.
 - Never moves, resizes or edits your layout objects.
 - Only uses decoration objects that have no collision and no trigger behaviour. Anything else is removed before it is kept.
-- Never places decoration inside layout geometry, and keeps clear of spikes.
+- Never places decoration inside layout geometry, keeps clear of spikes, and skips spots already taken by existing decoration, so running it twice does not stack duplicates.
 - With "Keep play area clear" on, decoration rising from floors is capped at about one block tall.
-- Decoration goes on a back z-layer, behind the layout.
+- Decoration goes on back z-layers, behind the layout.
+
+## Options
+
+| Option | What it does |
+|---|---|
+| Style | Grief, Tidal Wave, Last Hope, Limbo. Tidal Wave has an **Underwater** and a **Beach** look. |
+| Pattern | Edge (along surfaces), Scatter (drifting off surfaces), Rhythm (evenly spaced), Cluster (groups). |
+| Density | How much decoration. |
+| Layers (1-3) | Back, middle and front depth layers. All three stay behind the layout. 1 puts everything on one layer. |
+| Background | Off / Light / Full. Large faint shapes in the empty space around the layout (not in open sky), on the back layer. |
+| Lighting | Strength of the detail color's glow (needs "Add color triggers"). |
+| Detail | How many small accent objects. |
+| Variation | How random sizes and rotations are. |
+| Seed | Same seed + settings + layout = same result. Regenerate picks a new seed. |
+| Background color | X = leave your level's background alone, A = the style's color, or a swatch. Needs "Add color triggers". |
 
 ## Styles
 
 | Style | Look |
 |---|---|
-| Grief | Thorns, hanging chains, drifting ash. Violet and crimson. |
-| Tidal Wave | Curling waves, bubbles, kelp. Cyan and deep blue. |
-| Last Hope | Light rays, sparks, feathers. Gold and pale blue. |
-| Limbo | Dark grass and branches, hanging roots, thin mist. |
+| Grief | Hell style. Black and gray, blood-red thorns and chains, white neon glints. |
+| Tidal Wave (Underwater) | Curling waves, rising bubbles, kelp in cyan and deep blue. |
+| Tidal Wave (Beach) | Sky blue background with orange and purple, wave curls, clouds and sun shapes. |
+| Last Hope | Dark sky with luminous gold and pale-blue rays, sparks and feathers. |
+| Limbo | A dark void with glowing teal and magenta shapes, strange roots and symbols. |
 
-These are interpretations of the style names. They are data tables in `src/core/Styles.cpp`, so they are easy to retune.
-
-Patterns: **Edge** (along surfaces), **Scatter** (drifting off surfaces), **Rhythm** (evenly spaced), **Cluster** (groups).
+These are interpretations of the style names (the real levels' block decoration is not documented anywhere I could find). They are data tables in `src/core/Styles.cpp`, so they are easy to retune. Geometry Dash has no ready-made palm trees, pentagrams or demon figures to find by name, so the styles use whatever shapes the game's decoration set offers.
 
 ## Colors
 
-The mod uses color channels 997 and 998. If "Add color triggers" is on, it adds two Color triggers above the level start so your chosen colors show. Change the channels in `Settings.hpp` if they clash with your level.
+The mod uses color channels 997 and 998 (and 1000, the background channel, if you choose a background color). If "Add color triggers" is on, it adds Color triggers above the level start so your chosen colors show. Change the channels in `Settings.hpp` if they clash with your level.
 
 ## Building the .geode (iOS)
 
@@ -51,7 +66,7 @@ A `.geode` has to be compiled, and iOS builds need a Mac, so GitHub's Mac server
 The workflow builds iOS only, to keep it fast. To add Windows, Android or macOS, copy the matrix from
 https://github.com/geode-sdk/build-geode-mod/blob/main/examples/multi-platform.yml
 
-Targets Geode v5.11.2 and Geometry Dash 2.208.
+Targets Geode 5.11.2 and Geometry Dash 2.208.
 
 ## Layout
 

@@ -45,7 +45,7 @@ struct Occupancy {
 
 Plan makePlan(ScanResult const& sc, Settings const& st, unsigned seed, PoolProvider const& poolFn) {
     Plan plan;
-    StyleDef const& sd = styleDef(st.style);
+    StyleDef const& sd = styleDef(st.style, st.variant);
     std::mt19937 rng(seed);
     auto u = [&](float a, float b) { return std::uniform_real_distribution<float>(a, b)(rng); };
 
@@ -64,17 +64,23 @@ Plan makePlan(ScanResult const& sc, Settings const& st, unsigned seed, PoolProvi
     }
 
     float d = std::clamp(st.density / 100.f, 0.f, 1.f) * sd.densityMul;
+    float detailK = std::clamp(st.detail / 100.f, 0.f, 1.f);
+    float varK = 0.4f + 1.2f * std::clamp(st.variation / 100.f, 0.f, 1.f);  // 1.0 at the default 50
     Occupancy occ;
+    for (auto const& e : sc.existing) occ.mark(e.first, std::max(4.f, e.second * .35f));
+
+    // Small accent rules scale with the Detail setting (1.0 at the default 50).
+    auto effWeight = [&](DecoRule const& r) { return r.maxSize <= 60.f ? r.weight * (0.4f + 1.2f * detailK) : r.weight; };
 
     auto pickRule = [&](unsigned kind, bool anyFace) -> int {
         float total = 0.f;
         for (auto const& r : rules)
-            if (anyFace || (r.rule->faces & kind)) total += r.rule->weight;
+            if (anyFace || (r.rule->faces & kind)) total += effWeight(*r.rule);
         if (total <= 0.f) return -1;
         float roll = u(0.f, total);
         for (size_t i = 0; i < rules.size(); ++i) {
             if (!(anyFace || (rules[i].rule->faces & kind))) continue;
-            roll -= rules[i].rule->weight;
+            roll -= effWeight(*rules[i].rule);
             if (roll <= 0.f) return static_cast<int>(i);
         }
         for (size_t i = rules.size(); i-- > 0;)
@@ -86,7 +92,8 @@ Plan makePlan(ScanResult const& sc, Settings const& st, unsigned seed, PoolProvi
         if (plan.items.size() >= kMaxDecorations) return false;
         DecoRule const& rule = *rr.rule;
         Candidate const& cand = rr.pool[std::uniform_int_distribution<size_t>(0, rr.pool.size() - 1)(rng)];
-        float scale = u(rule.scaleMin, rule.scaleMax);
+        float mid = (rule.scaleMin + rule.scaleMax) * .5f, half = (rule.scaleMax - rule.scaleMin) * .5f * varK;
+        float scale = std::max(.15f, mid + u(-1.f, 1.f) * half);
         float size = cand.size * scale;
         if (size < 6.f) {
             scale *= 6.f / std::max(size, 0.5f);
@@ -119,12 +126,14 @@ Plan makePlan(ScanResult const& sc, Settings const& st, unsigned seed, PoolProvi
         p.id = cand.id;
         p.pos = centre;
         p.scale = scale;
+        p.size = size;
+        p.layer = st.layers <= 1 ? 1 : std::clamp(rule.layer, 0, 2);
         p.flipX = u(0.f, 1.f) < .5f;
         p.secondary = rule.useSecondary != (u(0.f, 1.f) < .15f);
         if (rule.alignToNormal) {
-            p.rotation = std::atan2(f.normal.x, f.normal.y) * 180.f / kPi + u(-8.f, 8.f);
+            p.rotation = std::atan2(f.normal.x, f.normal.y) * 180.f / kPi + u(-8.f, 8.f) * varK;
         } else {
-            p.rotation = jitterRot ? u(0.f, 360.f) : u(-20.f, 20.f);
+            p.rotation = jitterRot ? (varK < .7f ? u(-30.f, 30.f) : u(0.f, 360.f)) : u(-20.f, 20.f) * varK;
         }
         plan.items.push_back(p);
         return true;
@@ -178,7 +187,7 @@ Plan makePlan(ScanResult const& sc, Settings const& st, unsigned seed, PoolProvi
             for (auto const& f : faces) {
                 if (plan.items.size() >= kMaxDecorations) break;
                 if (u(0.f, 1.f) > d * .2f) continue;
-                int n = static_cast<int>(u(3.f, 7.f));
+                int n = std::clamp(static_cast<int>(u(3.f, 7.f) * (0.5f + detailK)), 2, 12);
                 for (int j = 0; j < n; ++j) {
                     int ri = pickRule(f.kind, false);
                     if (ri < 0) break;
@@ -186,6 +195,60 @@ Plan makePlan(ScanResult const& sc, Settings const& st, unsigned seed, PoolProvi
                 }
             }
             break;
+        }
+    }
+
+
+    // ---- Background: large, faint shapes in empty space nearest the layout, on the back layer ----
+    if (st.background > 0 && !sd.backgroundRules.empty() && !sc.polys.empty()) {
+        std::vector<RuleRT> bgRules;
+        for (auto const& r : sd.backgroundRules) {
+            auto pool = poolFn(r);
+            if (!pool.empty()) bgRules.push_back({&r, std::move(pool)});
+        }
+        if (!bgRules.empty()) {
+            float spacing = st.background >= 2 ? 105.f : 170.f;
+            float x0 = sc.mn.x - 60.f, x1 = sc.mx.x + 60.f, y0 = sc.mn.y - 60.f, y1 = sc.mx.y + 240.f;
+            float cells = std::max(1.f, (x1 - x0) / spacing) * std::max(1.f, (y1 - y0) / spacing);
+            if (cells > static_cast<float>(kMaxBackground)) spacing *= std::sqrt(cells / static_cast<float>(kMaxBackground));
+            float wsum = 0.f;
+            for (auto const& r : bgRules) wsum += r.rule->weight;
+            const float reachMax = 260.f;
+            for (float y = y0; y <= y1; y += spacing) {
+                for (float x = x0; x <= x1; x += spacing) {
+                    if (plan.backgroundCount >= kMaxBackground) break;
+                    if (u(0.f, 1.f) > (st.background >= 2 ? .8f : .55f)) continue;
+                    V2 c(x + u(-spacing * .4f, spacing * .4f), y + u(-spacing * .4f, spacing * .4f));
+                    float roll = u(0.f, wsum);
+                    RuleRT* rr = &bgRules.back();
+                    for (auto& r : bgRules) {
+                        roll -= r.rule->weight;
+                        if (roll <= 0.f) { rr = &r; break; }
+                    }
+                    DecoRule const& rule = *rr->rule;
+                    Candidate const& cand = rr->pool[std::uniform_int_distribution<size_t>(0, rr->pool.size() - 1)(rng)];
+                    float scale = std::max(.2f, u(rule.scaleMin, rule.scaleMax));
+                    float size = cand.size * scale;
+                    if (size < 40.f) { scale *= 40.f / std::max(size, 1.f); size = 40.f; }
+                    // Stay clear of the layout, but only decorate the area around it, not empty sky.
+                    float nearest = sc.index.distance(c, reachMax, kMaskAll);
+                    if (nearest <= size * .5f + 12.f || nearest >= reachMax) continue;
+                    if (occ.fraction(c, size * .35f) > .25f) continue;
+                    occ.mark(c, size * .35f);
+                    Placement p;
+                    p.id = cand.id;
+                    p.pos = c;
+                    p.scale = scale;
+                    p.size = size;
+                    p.layer = 0;
+                    p.background = true;
+                    p.flipX = u(0.f, 1.f) < .5f;
+                    p.secondary = rule.useSecondary != (u(0.f, 1.f) < .3f);
+                    p.rotation = u(-25.f, 25.f) * varK;
+                    plan.items.push_back(p);
+                    ++plan.backgroundCount;
+                }
+            }
         }
     }
 

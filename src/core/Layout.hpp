@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "Styles.hpp"
 #include "Vec.hpp"
@@ -58,6 +59,9 @@ struct ScanResult {
     LayoutIndex index;
     int counts[4] = {0, 0, 0, 0};
     V2 mn, mx;
+    // Decorations already in the level (position, size). New decoration keeps off them, so
+    // running twice never stacks duplicates.
+    std::vector<std::pair<V2, float>> existing;
 };
 
 // Builds polygons, the spatial index and the exposed faces from object descriptions.

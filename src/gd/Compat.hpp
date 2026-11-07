@@ -8,6 +8,7 @@ namespace autodeco::compat {
 using namespace geode::prelude;
 
 constexpr int kColorTriggerKey = 899;  // the editor's Color trigger
+constexpr int kBackgroundChannel = 1000;  // the level's background colour channel
 
 // Texture name an object key uses ("" when the key is unused).
 inline std::string frameForKey(int key) {
@@ -29,26 +30,28 @@ inline void setChannels(GameObject* o, int baseChannel, int detailChannel) {
     o->updateObjectEditorColor();
 }
 
-// Draw behind the layout.
-inline void sendBehind(GameObject* o) {
-    o->m_zLayer = ZLayer::B3;
-    o->m_zOrder = -3;
+// Draw behind the layout. layer: 0 = back, 1 = middle, 2 = front (still behind the layout).
+inline void sendBehind(GameObject* o, int layer = 1) {
+    o->m_zLayer = layer <= 0 ? ZLayer::B4 : (layer == 1 ? ZLayer::B3 : ZLayer::B2);
+    o->m_zOrder = layer <= 0 ? -5 : (layer == 1 ? -3 : -1);
 }
 
 // Makes a Color trigger set `channel` to `color` instantly.
-inline bool configureColorTrigger(GameObject* o, int channel, ccColor3B color) {
+inline bool configureColorTrigger(GameObject* o, int channel, ccColor3B color, float opacity = 1.f) {
     auto t = typeinfo_cast<EffectGameObject*>(o);
     if (!t) return false;
     t->m_targetColor = channel;
     t->m_triggerTargetColor = color;
     t->m_duration = 0.f;
-    t->m_opacity = 1.f;
+    t->m_opacity = opacity;
     return true;
 }
 
 // One undo step that removes everything in `objects`.
-inline void registerUndo(LevelEditorLayer* lel, CCArray* objects) {
-    lel->addToUndoList(UndoObject::createWithArray(objects, UndoCommand::Paste), false);
+inline UndoObject* registerUndo(LevelEditorLayer* lel, CCArray* objects) {
+    auto undo = UndoObject::createWithArray(objects, UndoCommand::Paste);
+    lel->addToUndoList(undo, false);
+    return undo;
 }
 
 }  // namespace autodeco::compat

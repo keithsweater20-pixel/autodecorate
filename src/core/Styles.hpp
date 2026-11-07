@@ -26,17 +26,20 @@ struct DecoRule {
     bool alignToNormal = true;          // grow away from the surface (hang / rise)
     bool useSecondary = false;          // use the secondary colour
     float reach = 0.f;                  // gap kept between surface and decoration
+    int layer = 1;                      // 0 = back, 1 = middle, 2 = front (all stay behind the layout)
 };
 
 struct StyleDef {
     const char* name;
     const char* blurb;
     RGB primary, secondary;
+    RGB background;                     // suggested background colour
     std::vector<DecoRule> rules;
+    std::vector<DecoRule> backgroundRules;  // large, faint shapes placed away from the layout
     float scatterBand;  // how far from a surface Scatter/Cluster may drift
     float densityMul;   // style-level density multiplier
 };
 
-StyleDef const& styleDef(Style s);
+StyleDef const& styleDef(Style s, int variant = 0);
 
 }  // namespace autodeco

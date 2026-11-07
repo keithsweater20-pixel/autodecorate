@@ -34,9 +34,13 @@ int main(int argc, char** argv) {
     int fails = 0;
     FILE* csv = std::fopen(argc > 1 ? argv[1] : "/dev/null", "w");
     for (int st = 0; st < kStyleCount; ++st)
+      for (int var = 0; var < (st == 1 ? 2 : 1); ++var)
         for (int pt = 0; pt < kPatternCount; ++pt) {
             Settings s2;
             s2.style = static_cast<Style>(st);
+            s2.variant = var;
+            s2.background = 2;
+            s2.seed = 1234;
             s2.pattern = static_cast<Pattern>(pt);
             s2.density = 70;
             Plan p = makePlan(scan, s2, 1234, pool);
@@ -48,8 +52,29 @@ int main(int argc, char** argv) {
                 if (scan.index.distance(it.pos, 9.f, kMaskSpike) < 8.f) ++nearSpike;
                 if (csv && st == 0 && pt == 0) std::fprintf(csv, "%f,%f,%f,%f\n", it.pos.x, it.pos.y, it.rotation, it.scale);
             }
-            std::printf("style=%d pattern=%d placed=%zu inside=%d nearSpike=%d %s\n", st, pt, p.items.size(), inside, nearSpike,
-                        p.note.c_str());
+            size_t bg = p.backgroundCount; int layerCount[3] = {0, 0, 0};
+            for (auto const& it : p.items) if (it.layer >= 0 && it.layer < 3) ++layerCount[it.layer];
+            if (var == 0 && pt == 0) {
+                // Settings must actually change the result: variation, detail and layers.
+                Settings a = s2; a.variation = 0; Settings b = s2; b.variation = 100;
+                auto pa = makePlan(scan, a, 1234, pool), pb = makePlan(scan, b, 1234, pool);
+                bool differ = false;
+                for (size_t i = 0; i < std::min(pa.items.size(), pb.items.size()); ++i)
+                    if (std::abs(pa.items[i].scale - pb.items[i].scale) > 1e-3f) { differ = true; break; }
+                if (!differ) { std::printf("VARIATION HAS NO EFFECT\n"); ++fails; }
+                Settings one = s2; one.layers = 1; auto p1 = makePlan(scan, one, 1234, pool);
+                for (auto const& it : p1.items) if (it.layer != 1 && !it.background) { std::printf("LAYERS=1 NOT HONOURED\n"); ++fails; break; }
+                Settings nobg = s2; nobg.background = 0; auto pn = makePlan(scan, nobg, 1234, pool);
+                if (pn.backgroundCount != 0) { std::printf("BACKGROUND OFF NOT HONOURED\n"); ++fails; }
+                Settings ex = s2; for (auto const& it : p.items) ex = s2; ScanResult scan2; buildScan(scan2, objs);
+                for (auto const& it : p.items) scan2.existing.push_back({it.pos, 30.f});
+                auto pe = makePlan(scan2, s2, 1234, pool);
+                int overlap = 0;
+                for (auto const& it : pe.items) for (auto const& e : scan2.existing) if ((it.pos - e.first).len() < 2.f) { ++overlap; break; }
+                if (overlap) { std::printf("DUPLICATES ON EXISTING: %d\n", overlap); ++fails; }
+            }
+            std::printf("style=%d variant=%d pattern=%d placed=%zu (bg %zu, layers %d/%d/%d) inside=%d nearSpike=%d %s\n", st, var, pt, p.items.size(), bg,
+                        layerCount[0], layerCount[1], layerCount[2], inside, nearSpike, p.note.c_str());
             if (inside || nearSpike) ++fails;
         }
     if (csv) std::fclose(csv);
